@@ -18,20 +18,21 @@ package ninja.metrics.influxdb;
 
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.ScheduledReporter;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+
+import metrics_influxdb.HttpInfluxdbProtocol;
 import metrics_influxdb.InfluxdbReporter;
 import ninja.lifecycle.Dispose;
 import ninja.lifecycle.Start;
 import ninja.metrics.MetricsService;
 import ninja.utils.NinjaProperties;
 import ninja.utils.TimeUtil;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.codahale.metrics.MetricFilter;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import metrics_influxdb.InfluxdbHttp;
 
 /**
  * Integration of Ninja Metrics with InfluxDB.
@@ -47,7 +48,7 @@ public class NinjaInfluxDB {
 
     private final MetricsService metricsService;
 
-    private InfluxdbReporter reporter;
+    private ScheduledReporter reporter;
 
     @Inject
     public NinjaInfluxDB(NinjaProperties ninjaProperties,
@@ -78,17 +79,11 @@ public class NinjaInfluxDB {
             final int delay = TimeUtil.parseDuration(period);
 
             try {
-
-                final InfluxdbHttp influxdbHttp = new InfluxdbHttp(address, port, database,
-                        username, password);
-                final InfluxdbReporter reporter = InfluxdbReporter
-                        .forRegistry(metricsService.getMetricRegistry())
-                        .prefixedWith(hostname)
-                        .convertRatesTo(TimeUnit.SECONDS)
-                        .convertDurationsTo(TimeUnit.MILLISECONDS)
-                        .filter(MetricFilter.ALL).build(influxdbHttp);
-
-                reporter.start(delay, TimeUnit.SECONDS);
+				reporter = InfluxdbReporter.forRegistry(metricsService.getMetricRegistry())
+						.protocol(new HttpInfluxdbProtocol("http", address, port, username, password, database))
+						.convertRatesTo(TimeUnit.SECONDS).convertDurationsTo(TimeUnit.MILLISECONDS)
+						.filter(MetricFilter.ALL).skipIdleMetrics(false).tag("server", hostname).build();
+				reporter.start(delay, TimeUnit.SECONDS);
 
                 log.info(
                         "Started InfluxDB Metrics reporter for '{}', updating every {}",

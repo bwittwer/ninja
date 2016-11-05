@@ -52,11 +52,13 @@ and limitations under the License. -->
             <artifactId>ninja-metrics</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>net.alchim31</groupId>
-            <artifactId>metrics-influxdb</artifactId>
-            <version>0.6.0</version>
-        </dependency>
+		<!-- https://mvnrepository.com/artifact/com.github.davidb/metrics-influxdb -->
+		<dependency>
+			<groupId>com.github.davidb</groupId>
+			<artifactId>metrics-influxdb</artifactId>
+			<version>0.9.3</version>
+		</dependency>
+        
 
         <!-- Testing -->
         <dependency>
